@@ -183,6 +183,13 @@ make screenshots   # starts the grafana-image-renderer profile and renders docs/
 Without Docker's renderer: open each dashboard in a browser with `&kiosk` appended
 to the URL and take a window screenshot at 1600 px width.
 
+## Related
+
+[us-market-widget](https://github.com/YOUR_GITHUB_USER/us-market-widget) — the desktop
+indicator this kit's trading-hours row is a simplified version of. The widget derives
+the full NYSE holiday and early-close calendar from the exchange rules; the kit's
+`market_session_open` metric uses weekday hours only.
+
 ## Private reference material
 
 Dashboards and rules in this repository were built from scratch. The structure
