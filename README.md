@@ -70,8 +70,9 @@ Other targets: `make check` (validate rules, config, JSON, run the leak check),
 
 ## Dashboards
 
-The images below are produced by `make screenshots` (see below) and are not
-committed until the stack has run long enough to show real history.
+The images below were rendered by the CI workflow (`.github/workflows/screenshots.yml`)
+after 45 minutes of simulated traffic, so the panels show real history produced by
+the synthetic load generator, not static mock-ups.
 
 ### Service Overview — `svc-overview`
 
