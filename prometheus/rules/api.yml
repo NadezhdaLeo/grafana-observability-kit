@@ -1,0 +1,164 @@
+# Rule template (every alert carries all of these; see docs/ALERT_RULE_TEMPLATE.md)
+#
+#   labels:
+#     owner:    team that fixes it                      (web | jobs | storage | sre)
+#     severity: critical | warning | info               (what kind of attention)
+#     page:     "true" | "false"                        (interrupt a human, or not)
+#     service:  comes from the metric where possible
+#   annotations:
+#     summary:      one line, what is wrong
+#     description:  what the number means and the first thing to check
+#     runbook_url:  always present, even for info
+#
+# critical + page="true" is reserved for "a human must act now". Everything that
+# can wait until the next working day is warning. Everything that is a fact to
+# report, not a condition to fix, is info and never reaches chat.
+
+groups:
+  - name: api
+    rules:
+      - alert: ApiDown
+        expr: |
+          sum by (service, environment) (app_up{service="api", environment="production"}) == 0
+        for: 2m
+        labels:
+          owner: web
+          severity: critical
+          page: "true"
+        annotations:
+          summary: "API has no healthy instance in {{ $labels.environment }}"
+          description: >-
+            Every production API instance has failed its health check for 2 minutes.
+            Customers get connection errors. Check the deployment first, then the
+            load balancer.
+          runbook_url: https://example.org/runbooks/api-down
+
+      - alert: ApiInstanceDown
+        expr: |
+          app_up{service="api", environment="production"} == 0
+        for: 3m
+        labels:
+          owner: web
+          severity: warning
+          page: "false"
+        annotations:
+          summary: "API instance {{ $labels.instance }} is down"
+          description: >-
+            One instance is failing its health check while others still serve traffic.
+            Capacity is reduced; investigate during working hours unless ApiDown also fires.
+          runbook_url: https://example.org/runbooks/api-down
+
+      - alert: ApiHighErrorRate
+        expr: |
+          (
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production", status=~"5.."}[5m]))
+            /
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          owner: web
+          severity: critical
+          page: "true"
+          alertname_family: api_errors
+        annotations:
+          summary: "API 5xx ratio above 5% for 5 minutes"
+          description: >-
+            {{ $value | humanizePercentage }} of requests fail. Above 5% the error
+            budget burns in hours, not days. Check recent deploys and the database.
+          runbook_url: https://example.org/runbooks/api-error-rate
+
+      - alert: ApiElevatedErrorRate
+        expr: |
+          (
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production", status=~"5.."}[5m]))
+            /
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production"}[5m]))
+          ) > 0.01
+        for: 10m
+        labels:
+          owner: web
+          severity: warning
+          page: "false"
+          alertname_family: api_errors
+        annotations:
+          summary: "API 5xx ratio above 1% for 10 minutes"
+          description: >-
+            {{ $value | humanizePercentage }} of requests fail. Not yet customer-visible
+            at scale; look for a pattern by route before it becomes one.
+          runbook_url: https://example.org/runbooks/api-error-rate
+
+      - alert: ApiErrorBudgetBurn
+        # Multi-window burn rate for a 99.5% availability SLO.
+        # 14.4x burn over 1h, confirmed by the last 5m, consumes 2% of a 30-day budget per hour.
+        expr: |
+          (
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production", status=~"5.."}[1h]))
+            /
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production"}[1h]))
+          ) > (14.4 * 0.005)
+          and
+          (
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production", status=~"5.."}[5m]))
+            /
+            sum by (service, environment) (rate(http_requests_total{service="api", environment="production"}[5m]))
+          ) > (14.4 * 0.005)
+        for: 2m
+        labels:
+          owner: web
+          severity: critical
+          page: "true"
+        annotations:
+          summary: "API is burning its 30-day error budget 14x too fast"
+          description: >-
+            Sustained failure rate that will exhaust the availability SLO within days.
+            This is the page that matters even when the raw error ratio looks small.
+          runbook_url: https://example.org/runbooks/api-error-rate
+
+      - alert: ApiHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, service, environment) (rate(http_request_duration_seconds_bucket{service="api", environment="production"}[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          owner: web
+          severity: warning
+          page: "false"
+        annotations:
+          summary: "API p95 latency above 1s for 10 minutes"
+          description: >-
+            p95 is {{ $value | humanizeDuration }}. Usually the database or an
+            upstream dependency; compare with DbSlowQueries before touching the API.
+          runbook_url: https://example.org/runbooks/api-latency
+
+      # Non-production: visible, never paging. Same symptoms, lower tier.
+      - alert: ApiDownNonProd
+        expr: |
+          app_up{service="api", environment!="production"} == 0
+        for: 10m
+        labels:
+          owner: web
+          severity: warning
+          page: "false"
+        annotations:
+          summary: "API instance {{ $labels.instance }} ({{ $labels.environment }}) is down"
+          description: Non-production outage. Fix during working hours; never pages.
+          runbook_url: https://example.org/runbooks/api-down
+
+      - alert: ApiHighErrorRateNonProd
+        expr: |
+          (
+            sum by (service, environment) (rate(http_requests_total{service="api", environment!="production", status=~"5.."}[5m]))
+            /
+            sum by (service, environment) (rate(http_requests_total{service="api", environment!="production"}[5m]))
+          ) > 0.05
+        for: 10m
+        labels:
+          owner: web
+          severity: info
+          page: "false"
+        annotations:
+          summary: "API 5xx ratio above 5% in {{ $labels.environment }}"
+          description: Non-production error rate, reported only. Shows up in the daily digest.
+          runbook_url: https://example.org/runbooks/api-error-rate

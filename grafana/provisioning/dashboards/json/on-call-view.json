@@ -1,0 +1,2153 @@
+{
+  "uid": "on-call-view",
+  "title": "On-call View",
+  "description": "Who is being paged, how often, whether that matches the severity labels, and what the markets are doing while it happens.",
+  "tags": [
+    "observability-kit",
+    "alerting",
+    "on-call"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "sph",
+        "label": "Samples per hour",
+        "type": "constant",
+        "query": "240",
+        "current": {
+          "text": "240",
+          "value": "240"
+        },
+        "hide": 2,
+        "description": "3600 / evaluation_interval."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 61,
+      "type": "row",
+      "title": "Right now",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 62,
+      "type": "stat",
+      "title": "Paging now",
+      "description": "Alerts with page=\"true\" in production, firing right now. Each one has a human on the hook.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "count(ALERTS{alertstate=\"firing\", page=\"true\", environment=\"production\"}) or vector(0)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "green",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "OK",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 63,
+      "type": "stat",
+      "title": "Firing, not paging",
+      "description": "critical and warning alerts that stay in chat.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "count(ALERTS{alertstate=\"firing\", page!=\"true\", severity!=\"info\"}) or vector(0)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "green",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "OK",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 64,
+      "type": "stat",
+      "title": "Active silences",
+      "description": "From Alertmanager itself. Every silence should carry a ticket in its comment; review weekly.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum(alertmanager_silences{state=\"active\"}) or vector(0)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 65,
+      "type": "stat",
+      "title": "Suppressed alerts",
+      "description": "Alerts hidden by a silence or an inhibition rule. What you are choosing not to see.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum(alertmanager_alerts{state=\"suppressed\"}) or vector(0)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 66,
+      "type": "stat",
+      "title": "Heartbeat age",
+      "description": "Seconds since the Watchdog alert last reached the heartbeat receiver. Above 5 minutes the alerting pipeline is broken and nothing else will page.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "time() - watchdog_last_received_timestamp_seconds",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 48
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 120
+              },
+              {
+                "color": "red",
+                "value": 300
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 67,
+      "type": "stat",
+      "title": "Alertmanager up",
+      "description": "A single Alertmanager is a single point of failure. The heartbeat on the left is the external check.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "min(up{job=\"alertmanager\"})",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 48
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "UP",
+                  "color": "green",
+                  "index": 0
+                },
+                "0": {
+                  "text": "DOWN",
+                  "color": "red",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 68,
+      "type": "row",
+      "title": "Trading hours",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 69,
+      "type": "grafana-clock-panel",
+      "title": "New York",
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "options": {
+        "mode": "time",
+        "clockType": "24 hour",
+        "timezone": "America/New_York",
+        "refresh": "sec",
+        "timeSettings": {
+          "fontSize": "32px",
+          "fontWeight": "bold"
+        },
+        "dateSettings": {
+          "showDate": true,
+          "dateFormat": "ddd D MMM",
+          "fontSize": "14px",
+          "fontWeight": "normal"
+        },
+        "bgColor": ""
+      }
+    },
+    {
+      "id": 70,
+      "type": "grafana-clock-panel",
+      "title": "London",
+      "gridPos": {
+        "x": 4,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "options": {
+        "mode": "time",
+        "clockType": "24 hour",
+        "timezone": "Europe/London",
+        "refresh": "sec",
+        "timeSettings": {
+          "fontSize": "32px",
+          "fontWeight": "bold"
+        },
+        "dateSettings": {
+          "showDate": true,
+          "dateFormat": "ddd D MMM",
+          "fontSize": "14px",
+          "fontWeight": "normal"
+        },
+        "bgColor": ""
+      }
+    },
+    {
+      "id": 71,
+      "type": "grafana-clock-panel",
+      "title": "Frankfurt",
+      "gridPos": {
+        "x": 8,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "options": {
+        "mode": "time",
+        "clockType": "24 hour",
+        "timezone": "Europe/Berlin",
+        "refresh": "sec",
+        "timeSettings": {
+          "fontSize": "32px",
+          "fontWeight": "bold"
+        },
+        "dateSettings": {
+          "showDate": true,
+          "dateFormat": "ddd D MMM",
+          "fontSize": "14px",
+          "fontWeight": "normal"
+        },
+        "bgColor": ""
+      }
+    },
+    {
+      "id": 72,
+      "type": "grafana-clock-panel",
+      "title": "Tokyo",
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 4,
+        "h": 5
+      },
+      "options": {
+        "mode": "time",
+        "clockType": "24 hour",
+        "timezone": "Asia/Tokyo",
+        "refresh": "sec",
+        "timeSettings": {
+          "fontSize": "32px",
+          "fontWeight": "bold"
+        },
+        "dateSettings": {
+          "showDate": true,
+          "dateFormat": "ddd D MMM",
+          "fontSize": "14px",
+          "fontWeight": "normal"
+        },
+        "bgColor": ""
+      }
+    },
+    {
+      "id": 73,
+      "type": "stat",
+      "title": "Sessions",
+      "description": "Live from the market_session_open metric (weekday sessions only, no holiday calendar). An outage during an open session is a different incident from the same outage at 3 a.m.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 7,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "market_session_open",
+          "legendFormat": "{{exchange}}",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#555",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "OPEN",
+                  "color": "green",
+                  "index": 0
+                },
+                "0": {
+                  "text": "closed",
+                  "color": "#555",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 74,
+      "type": "state-timeline",
+      "title": "Session timeline",
+      "description": "When each exchange was open across the dashboard range. Overlay this mentally on the paging timeline below.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 16,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "market_session_open",
+          "legendFormat": "{{exchange}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "mergeValues": true,
+        "showValue": "never",
+        "alignValue": "left",
+        "rowHeight": 0.8,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "custom": {
+            "fillOpacity": 75,
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "OPEN",
+                  "color": "green",
+                  "index": 0
+                },
+                "0": {
+                  "text": "closed",
+                  "color": "#555",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 75,
+      "type": "bargauge",
+      "title": "Next session event",
+      "description": "Time until the exchange opens (if closed) or closes (if open).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 12,
+        "w": 8,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "market_seconds_to_next_event",
+          "legendFormat": "{{exchange}}",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "valueMode": "color",
+        "showUnfilled": true,
+        "minVizWidth": 8,
+        "minVizHeight": 16,
+        "maxVizHeight": 300,
+        "sizing": "auto",
+        "namePlacement": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dtdurations",
+          "min": 0,
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 76,
+      "type": "row",
+      "title": "Paging load",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 77,
+      "type": "stat",
+      "title": "Pages delivered per day",
+      "description": "Notifications the pager receiver actually got, averaged per day over the range. Green under 4 (Google SRE: two incidents per 12-hour shift).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "(sum(increase(alertmanager_webhook_notifications_total{receiver=\"pager\", status=\"firing\"}[$__range])) or vector(0)) / ($__range_s / 86400)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 4
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 78,
+      "type": "stat",
+      "title": "Page-worthy episodes per day",
+      "description": "Episodes of page=\"true\" rules. The gap to the left-hand number is what grouping and inhibition saved.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 19,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "((sum (changes(ALERTS_FOR_STATE{page=\"true\", environment=\"production\"}[$__range])) or vector(0)) + (sum (min_over_time(ALERTS_FOR_STATE{page=\"true\", environment=\"production\"}[$__range]) > bool (time() - $__range_s)) or vector(0))) / ($__range_s / 86400)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 4
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 79,
+      "type": "stat",
+      "title": "Severity model: critical per day",
+      "description": "What the pager would see if routing followed severity alone. Compare with the left: the difference is the cleanup backlog.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "((sum (changes(ALERTS_FOR_STATE{severity=\"critical\", environment=\"production\"}[$__range])) or vector(0)) + (sum (min_over_time(ALERTS_FOR_STATE{severity=\"critical\", environment=\"production\"}[$__range]) > bool (time() - $__range_s)) or vector(0))) / ($__range_s / 86400)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 4
+              },
+              {
+                "color": "red",
+                "value": 8
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 80,
+      "type": "stat",
+      "title": "Critical rules that do not page",
+      "description": "Distinct rules labelled critical in production without page=\"true\". Each needs a decision: page, or downgrade.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 19,
+        "w": 6,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "count(count by (alertname) (count_over_time(ALERTS{alertstate=\"firing\", severity=\"critical\", page!=\"true\", environment=\"production\"}[$__range]))) or vector(0)",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {
+          "valueSize": 56
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OK",
+                  "color": "green",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "OK",
+                  "color": "green",
+                  "index": 1
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 81,
+      "type": "timeseries",
+      "title": "Pages per day",
+      "description": "Daily pages with the sustainable budget drawn at 4.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum(increase(alertmanager_webhook_notifications_total{receiver=\"pager\", status=\"firing\"}[$__interval]))",
+          "legendFormat": "pages",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code",
+          "interval": "1d"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": [
+            "sum",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "barAlignment": 0,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 4
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 82,
+      "type": "timeseries",
+      "title": "Pages per hour",
+      "description": "Hourly resolution. Read against the session timeline above: pages outside working hours are the ones that cost sleep.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 25,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum(increase(alertmanager_webhook_notifications_total{receiver=\"pager\", status=\"firing\"}[$__interval]))",
+          "legendFormat": "pages",
+          "instant": false,
+          "range": true,
+          "format": "time_series",
+          "editorMode": "code",
+          "interval": "1h"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true,
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 0,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "barAlignment": 0,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": 0
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 83,
+      "type": "row",
+      "title": "What pages, what should",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 84,
+      "type": "table",
+      "title": "Rules that paged",
+      "description": "A paging rule with many firings is paging noise: the on-call engineer sees it too often to treat it as urgent.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 34,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "topk(15, sum by (alertname, owner, service) (changes(ALERTS_FOR_STATE{page=\"true\", environment=\"production\"}[$__range])) + sum by (alertname, owner, service) (min_over_time(ALERTS_FOR_STATE{page=\"true\", environment=\"production\"}[$__range]) > bool (time() - $__range_s)))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        },
+        "sortBy": [
+          {
+            "displayName": "Firings",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": 0
+              }
+            ]
+          },
+          "noValue": "No rule paged in this range"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rule"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 260
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Owner"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Service"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Firings"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "alertname": "Rule",
+              "owner": "Owner",
+              "service": "Service",
+              "Value": "Firings"
+            },
+            "indexByName": {},
+            "includeByName": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "type": "table",
+      "title": "Severity cleanup backlog",
+      "description": "critical without page=\"true\". Work through it from the top: must this wake someone at 03:00? If not, it is a warning.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "topk(15, sum by (alertname, owner) (changes(ALERTS_FOR_STATE{severity=\"critical\", page!=\"true\", environment=\"production\"}[$__range])) + sum by (alertname, owner) (min_over_time(ALERTS_FOR_STATE{severity=\"critical\", page!=\"true\", environment=\"production\"}[$__range]) > bool (time() - $__range_s)))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        },
+        "sortBy": [
+          {
+            "displayName": "Firings",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": 0
+              }
+            ]
+          },
+          "noValue": "OK: every critical rule in production pages"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rule"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Owner"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Firings"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "semi-dark-orange"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "alertname": "Rule",
+              "owner": "Owner",
+              "Value": "Firings"
+            },
+            "indexByName": {},
+            "includeByName": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "type": "table",
+      "title": "Paging rules outside production",
+      "description": "The pager route ignores these, but the label is wrong and will bite after the next routing change.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "count by (alertname, environment) (count_over_time(ALERTS{alertstate=\"firing\", page=\"true\", environment!=\"production\"}[$__range]))",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        },
+        "sortBy": [
+          {
+            "displayName": "Series",
+            "desc": true
+          }
+        ]
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": 0
+              }
+            ]
+          },
+          "noValue": "OK: nothing pages for non-production"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rule"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "alertname": "Rule",
+              "environment": "Env",
+              "Value": "Series"
+            },
+            "indexByName": {},
+            "includeByName": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "type": "bargauge",
+      "title": "Deliveries by receiver",
+      "description": "What Alertmanager delivered where. critical goes to both pager and team-chat by design; a page=\"true\" alert missing from the pager receiver is a routing bug.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 43,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "sum by (receiver) (increase(alertmanager_webhook_notifications_total{status=\"firing\"}[$__range]))",
+          "legendFormat": "{{receiver}}",
+          "instant": true,
+          "range": false,
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "displayMode": "lcd",
+        "orientation": "horizontal",
+        "valueMode": "color",
+        "showUnfilled": true,
+        "minVizWidth": 8,
+        "minVizHeight": 16,
+        "maxVizHeight": 300,
+        "sizing": "auto",
+        "namePlacement": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "color": {
+            "mode": "continuous-BlPu"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 88,
+      "type": "row",
+      "title": "Firing now",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 89,
+      "type": "table",
+      "title": "Firing now",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "refId": "A",
+          "expr": "ALERTS{alertstate=\"firing\", severity!=\"info\"}",
+          "legendFormat": "__auto",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": [
+            "sum"
+          ],
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "inspect": false
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": 0
+              }
+            ]
+          },
+          "noValue": "Nothing firing"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Rule"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open in Prometheus",
+                    "url": "http://localhost:9090/alerts?search=${__data.fields.Rule}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": 0
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pages"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "alertstate": true,
+              "job": true,
+              "alertname_family": true,
+              "cluster": true
+            },
+            "renameByName": {
+              "alertname": "Rule",
+              "severity": "Severity",
+              "page": "Pages",
+              "owner": "Owner",
+              "service": "Service",
+              "environment": "Env",
+              "instance": "Instance"
+            },
+            "indexByName": {
+              "alertname": 0,
+              "severity": 1,
+              "page": 2,
+              "owner": 3,
+              "service": 4,
+              "environment": 5,
+              "instance": 6
+            },
+            "includeByName": {}
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "title": "Observability Kit",
+      "type": "dashboards",
+      "tags": [
+        "observability-kit"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+name: observability-kit
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - alertmanager
+      - metrics-generator
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      # Single instance on purpose; see README "Design notes" for what that costs.
+      - --cluster.listen-address=
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "9093:9093"
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_USERS_DEFAULT_THEME: dark
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+      # Only used when the "screenshots" profile is up
+      GF_RENDERING_SERVER_URL: http://renderer:8081/render
+      GF_RENDERING_CALLBACK_URL: http://grafana:3000/
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/provisioning/dashboards/json:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    command:
+      - --path.rootfs=/host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "9100:9100"
+
+  metrics-generator:
+    build: ./metrics-generator
+    environment:
+      # 1.0 = realistic pacing; 4.0 = incidents four times as often (useful for demos)
+      SCENARIO_SPEED: "1.0"
+      LISTEN_PORT: "8000"
+    ports:
+      - "8000:8000"
+
+  # Optional: headless renderer for `make screenshots`
+  renderer:
+    image: grafana/grafana-image-renderer:3.12.9
+    profiles: ["screenshots"]
+    environment:
+      ENABLE_METRICS: "true"
+    ports:
+      - "8081:8081"
+
+volumes:
+  prometheus-data:
+  alertmanager-data:
+  grafana-data:

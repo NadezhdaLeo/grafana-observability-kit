@@ -1,0 +1,18 @@
+# Private reference material (company exports). Never committed.
+_private/
+_private/**
+
+# Local runtime state
+.env
+*.log
+__pycache__/
+*.pyc
+.venv/
+
+# Generated screenshots are committed on purpose; scratch renders are not
+docs/screenshots/*.tmp.png
+
+# Editor noise
+.DS_Store
+.idea/
+.vscode/

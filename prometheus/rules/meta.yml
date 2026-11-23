@@ -1,0 +1,160 @@
+# Alerting about the alerting. These rules read the ALERTS / ALERTS_FOR_STATE
+# series and the delivery counters, so labelling mistakes and noise become
+# visible instead of being discovered during an outage.
+#
+# Note the label_replace: an alert's own `alertname` overwrites whatever the
+# expression returns, so the offending rule's name is copied into `rule` first.
+
+groups:
+  - name: meta
+    rules:
+      - alert: Watchdog
+        # Always firing. Routed to a heartbeat receiver, never to a human. If the
+        # heartbeat stops arriving, the whole alerting pipeline is broken.
+        expr: vector(1)
+        labels:
+          owner: sre
+          severity: info
+          page: "false"
+          service: alerting
+        annotations:
+          summary: "Alerting pipeline heartbeat"
+          description: This alert is supposed to fire forever. Its absence is the signal.
+          runbook_url: https://example.org/runbooks/watchdog
+
+      - alert: WatchdogNotReceived
+        # In production this check must run OUTSIDE the monitored Prometheus and
+        # Alertmanager (a hosted dead-man's-switch), otherwise it dies with them.
+        # Here it lives in the metrics generator for demonstration.
+        expr: |
+          time() - watchdog_last_received_timestamp_seconds > 300
+        for: 1m
+        labels:
+          owner: sre
+          severity: critical
+          page: "true"
+          service: alerting
+          environment: production   # the pager route requires it; without it this page would be dropped
+        annotations:
+          summary: "No Watchdog heartbeat for 5 minutes"
+          description: Alertmanager stopped delivering. Nothing else will page until this is fixed.
+          runbook_url: https://example.org/runbooks/watchdog
+
+      - alert: TargetDown
+        expr: up == 0
+        for: 3m
+        labels:
+          owner: sre
+          severity: warning
+          page: "false"
+          service: monitoring
+        annotations:
+          summary: "Scrape target {{ $labels.job }}/{{ $labels.instance }} is down"
+          description: Prometheus cannot scrape this target. Alerts depending on it are blind.
+          runbook_url: https://example.org/runbooks/target-down
+
+      - alert: PrometheusRuleEvaluationFailures
+        expr: increase(prometheus_rule_evaluation_failures_total[5m]) > 0
+        for: 5m
+        labels:
+          owner: sre
+          severity: warning
+          page: "false"
+          service: monitoring
+        annotations:
+          summary: "Rule group {{ $labels.rule_group }} fails to evaluate"
+          description: A broken expression means that group's alerts silently never fire.
+          runbook_url: https://example.org/runbooks/target-down
+
+      # --- Labelling hygiene -------------------------------------------------
+
+      - alert: AlertWithoutOwner
+        expr: |
+          count by (rule) (label_replace(ALERTS{alertstate="firing", owner=""}, "rule", "$1", "alertname", "(.*)")) > 0
+        for: 10m
+        labels:
+          owner: sre
+          severity: info
+          page: "false"
+          service: alerting
+        annotations:
+          summary: "Rule {{ $labels.rule }} fires without an owner label"
+          description: Nobody is accountable for it, and routing by team cannot work.
+          runbook_url: https://example.org/runbooks/alert-hygiene
+
+      - alert: CriticalAlertNotPaging
+        # The "severity cleanup backlog": a critical in production that nobody is
+        # woken up for is either mislabelled or should not be critical.
+        expr: |
+          count by (rule) (label_replace(ALERTS{alertstate="firing", severity="critical", page!="true", environment="production"}, "rule", "$1", "alertname", "(.*)")) > 0
+        for: 10m
+        labels:
+          owner: sre
+          severity: info
+          page: "false"
+          service: alerting
+        annotations:
+          summary: "Rule {{ $labels.rule }} is critical in production but does not page"
+          description: 'Decide: either it must wake someone (page="true") or it is a warning.'
+          runbook_url: https://example.org/runbooks/alert-hygiene
+
+      - alert: PagingAlertOnNonProd
+        expr: |
+          count by (rule, environment) (label_replace(ALERTS{alertstate="firing", page="true", environment!="production"}, "rule", "$1", "alertname", "(.*)")) > 0
+        for: 5m
+        labels:
+          owner: sre
+          severity: warning
+          page: "false"
+          service: alerting
+        annotations:
+          summary: "Rule {{ $labels.rule }} would page for {{ $labels.environment }}"
+          description: The pager route ignores it, but the label is wrong. Fix the rule.
+          runbook_url: https://example.org/runbooks/alert-hygiene
+
+      - alert: AlertFlapping
+        # More than 4 state changes in an hour: the rule needs a longer `for:` or a
+        # rate-based condition. See QueueDepthHigh for the worked example.
+        expr: |
+          label_replace(changes(ALERTS_FOR_STATE[1h]) > 4, "rule", "$1", "alertname", "(.*)")
+        for: 10m
+        labels:
+          owner: sre
+          severity: info
+          page: "false"
+          service: alerting
+        annotations:
+          summary: "Rule {{ $labels.rule }} flapped {{ $value | printf \"%.0f\" }} times in the last hour"
+          description: Each flap is a notification nobody can act on. Lengthen the for clause.
+          runbook_url: https://example.org/runbooks/queue-depth-flapping
+
+      - alert: PagingBudgetExceeded
+        # On-call KPI as a rule. Google SRE guidance: at most two incidents per
+        # 12-hour shift. Above that, pages stop getting proper investigation.
+        expr: |
+          sum(increase(alertmanager_webhook_notifications_total{receiver="pager", status="firing"}[24h])) > 6
+        for: 15m
+        labels:
+          owner: sre
+          severity: warning
+          page: "false"
+          service: alerting
+        annotations:
+          summary: "{{ $value | printf \"%.0f\" }} pages in the last 24 hours"
+          description: On-call load is above the sustainable budget. Review the top paging rules this week.
+          runbook_url: https://example.org/runbooks/alert-hygiene
+
+      - alert: DeprecatedRuntimeInUse
+        # Example of a condition that is a FACT, not an incident. It fires for weeks.
+        # That is fine for info: it goes into a report, never into a channel.
+        expr: |
+          app_build_info{version=~".*-rc.*"} == 1
+        for: 1h
+        labels:
+          owner: sre
+          severity: info
+          page: "false"
+        annotations:
+          summary: "{{ $labels.instance }} runs a release candidate build ({{ $labels.version }})"
+          description: Tracked for the weekly report. Not an incident.
+          runbook_url: https://example.org/runbooks/alert-hygiene

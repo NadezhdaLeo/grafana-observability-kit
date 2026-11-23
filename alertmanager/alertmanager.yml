@@ -1,0 +1,85 @@
+# Routing is driven by two labels every rule must carry:
+#   severity: critical | warning | info   -> what kind of attention
+#   page:     "true" | "false"            -> whether a human is interrupted
+#
+# The pager route additionally requires environment="production". A rule that
+# says page="true" on staging is a labelling mistake, and the routing layer
+# refuses to act on it. The meta rules in prometheus/rules/meta.yml surface
+# such mismatches as info alerts so they get fixed instead of silently ignored.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: team-chat
+  # Group by the thing a human would fix, not just the rule name. Grouping on
+  # alertname alone hides a second service failing with the same symptom.
+  group_by: [alertname, service, environment]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    # Heartbeat: must reach an external dead-man's-switch, never a human.
+    - matchers:
+        - alertname = "Watchdog"
+      receiver: watchdog
+      group_wait: 0s
+      group_interval: 1m
+      repeat_interval: 1m
+
+    # Pages: production only, repeat hourly until acknowledged or resolved.
+    - matchers:
+        - page = "true"
+        - environment = "production"
+      receiver: pager
+      group_wait: 15s
+      repeat_interval: 1h
+      continue: true
+
+    # Everything marked info is report-only: aggregated, never pushed to chat.
+    - matchers:
+        - severity = "info"
+      receiver: report-only
+      group_interval: 30m
+      repeat_interval: 24h
+
+    # critical and warning land in the owning team's chat during the day.
+    - matchers:
+        - severity =~ "critical|warning"
+      receiver: team-chat
+
+receivers:
+  # All receivers post to the metrics-generator, which counts what Alertmanager
+  # actually delivered. The on-call dashboard shows these counts so routing
+  # changes can be verified end to end.
+  - name: pager
+    webhook_configs:
+      - url: http://metrics-generator:8000/alerts?receiver=pager
+        send_resolved: true
+  - name: team-chat
+    webhook_configs:
+      - url: http://metrics-generator:8000/alerts?receiver=team-chat
+        send_resolved: true
+  - name: report-only
+    webhook_configs:
+      - url: http://metrics-generator:8000/alerts?receiver=report-only
+        send_resolved: false
+  - name: watchdog
+    webhook_configs:
+      - url: http://metrics-generator:8000/alerts?receiver=watchdog
+        send_resolved: false
+
+inhibit_rules:
+  # When a service is down, its latency/error alerts are consequences, not news.
+  - source_matchers:
+      - alertname =~ "ApiDown|DbDown|WorkerDown|QueueDown"
+    target_matchers:
+      - severity =~ "warning|info"
+    equal: [service, environment]
+
+  # A critical for the same symptom silences the warning tier of the same rule family.
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: [alertname_family, service, environment]

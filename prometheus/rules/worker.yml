@@ -1,0 +1,69 @@
+groups:
+  - name: worker
+    rules:
+      - alert: WorkerCrashLooping
+        # Counting restarts is deliberate. An "instance down" rule with for: 5m never
+        # fires on a crash loop, because the process is up again before 5m elapse.
+        expr: |
+          increase(worker_restarts_total{environment="production"}[15m]) > 3
+        for: 5m
+        labels:
+          owner: jobs
+          severity: critical
+          page: "true"
+          service: worker
+        annotations:
+          summary: "Worker {{ $labels.instance }} restarted {{ $value | printf \"%.0f\" }} times in 15 minutes"
+          description: >-
+            The process keeps dying and being restarted. Jobs are retried but throughput
+            drops and the queue backs up. Look at the last log lines before exit.
+          runbook_url: https://example.org/runbooks/worker-crashloop
+
+      - alert: WorkerJobFailureRateHigh
+        expr: |
+          (
+            sum by (environment) (rate(worker_jobs_total{environment="production", result="failed"}[10m]))
+            /
+            sum by (environment) (rate(worker_jobs_total{environment="production"}[10m]))
+          ) > 0.10
+        for: 10m
+        labels:
+          owner: jobs
+          severity: warning
+          page: "false"
+          service: worker
+        annotations:
+          summary: "More than 10% of jobs fail"
+          description: >-
+            {{ $value | humanizePercentage }} of jobs end in failure. Retries are not
+            counted here. Usually a downstream dependency, often the database.
+          runbook_url: https://example.org/runbooks/worker-failures
+
+      - alert: WorkerInstanceDown
+        expr: |
+          app_up{service="worker", environment="production"} == 0
+        for: 5m
+        labels:
+          owner: jobs
+          severity: warning
+          page: "false"
+        annotations:
+          summary: "Worker {{ $labels.instance }} is down"
+          description: One worker instance is not answering its health check.
+          runbook_url: https://example.org/runbooks/worker-crashloop
+
+      - alert: WorkerJobDurationHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, environment) (rate(worker_job_duration_seconds_bucket{environment="production"}[10m]))
+          ) > 20
+        for: 15m
+        labels:
+          owner: jobs
+          severity: warning
+          page: "false"
+          service: worker
+        annotations:
+          summary: "Worker p95 job duration above 20s"
+          description: Jobs take {{ $value | humanizeDuration }} at p95. Queue age will follow.
+          runbook_url: https://example.org/runbooks/worker-failures

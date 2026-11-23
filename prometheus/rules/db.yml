@@ -1,0 +1,125 @@
+groups:
+  - name: db
+    rules:
+      - alert: DbDown
+        expr: |
+          app_up{service="db", instance="db-primary", environment="production"} == 0
+        for: 1m
+        labels:
+          owner: storage
+          severity: critical
+          page: "true"
+        annotations:
+          summary: "Primary database is down"
+          description: Every write-path service fails. Check the process, then disk, then failover.
+          runbook_url: https://example.org/runbooks/db-down
+
+      - alert: DbConnectionsNearLimit
+        expr: |
+          db_connections_active{instance="db-primary", environment="production"}
+          / db_connections_max{instance="db-primary", environment="production"} > 0.9
+        for: 5m
+        labels:
+          owner: storage
+          severity: critical
+          page: "true"
+          service: db
+          alertname_family: db_connections
+        annotations:
+          summary: "Primary at {{ $value | humanizePercentage }} of its connection limit"
+          description: >-
+            New connections will be refused within minutes. Find the client holding
+            connections (usually a stuck pool) before raising the limit.
+          runbook_url: https://example.org/runbooks/db-connections
+
+      - alert: DbConnectionsHigh
+        expr: |
+          db_connections_active{environment="production"} / db_connections_max{environment="production"} > 0.75
+        for: 15m
+        labels:
+          owner: storage
+          severity: warning
+          page: "false"
+          service: db
+          alertname_family: db_connections
+        annotations:
+          summary: "{{ $labels.instance }} at {{ $value | humanizePercentage }} of its connection limit"
+          description: Sustained high pool usage. Review client pool sizes during working hours.
+          runbook_url: https://example.org/runbooks/db-connections
+
+      - alert: DbSlowQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, instance, environment) (rate(db_query_duration_seconds_bucket{op="select", environment="production"}[5m]))
+          ) > 0.05
+        for: 10m
+        labels:
+          owner: storage
+          severity: warning
+          page: "false"
+          service: db
+        annotations:
+          summary: "{{ $labels.instance }} p95 SELECT latency above 50ms"
+          description: >-
+            p95 is {{ $value | humanizeDuration }}. API latency alerts usually follow
+            within minutes. Check for a missing index or a long-running transaction.
+          runbook_url: https://example.org/runbooks/db-slow-queries
+
+      - alert: DbReplicationLagCritical
+        expr: |
+          db_replication_lag_seconds{instance="db-replica", environment="production"} > 90
+        for: 5m
+        labels:
+          owner: storage
+          severity: critical
+          page: "true"
+          service: db
+          alertname_family: replication_lag
+        annotations:
+          summary: "Replica is {{ $value | humanizeDuration }} behind the primary"
+          description: Read replicas serve stale data; a failover now would lose writes.
+          runbook_url: https://example.org/runbooks/db-replication
+
+      - alert: DbReplicationLagHigh
+        expr: |
+          db_replication_lag_seconds{instance="db-replica", environment="production"} > 30
+        for: 5m
+        labels:
+          owner: storage
+          severity: warning
+          page: "false"
+          service: db
+          alertname_family: replication_lag
+        annotations:
+          summary: "Replica is {{ $value | humanizeDuration }} behind the primary"
+          description: Lag above 30s. Watch the trend; the critical tier starts at 90s.
+          runbook_url: https://example.org/runbooks/db-replication
+
+      - alert: DbDiskNearlyFull
+        expr: |
+          db_disk_used_ratio{environment="production"} > 0.9
+        for: 10m
+        labels:
+          owner: storage
+          severity: critical
+          page: "true"
+          service: db
+        annotations:
+          summary: "{{ $labels.instance }} data volume at {{ $value | humanizePercentage }}"
+          description: The database stops accepting writes at 100%. Free space or extend the volume now.
+          runbook_url: https://example.org/runbooks/db-disk
+
+      - alert: DbDiskFillingUp
+        # Predictive: fires days before DbDiskNearlyFull would.
+        expr: |
+          predict_linear(db_disk_used_ratio{environment="production"}[6h], 7 * 24 * 3600) > 0.95
+        for: 30m
+        labels:
+          owner: storage
+          severity: warning
+          page: "false"
+          service: db
+        annotations:
+          summary: "{{ $labels.instance }} data volume full within 7 days at the current rate"
+          description: Plan the cleanup or the resize this week, not at 3 a.m. next week.
+          runbook_url: https://example.org/runbooks/db-disk

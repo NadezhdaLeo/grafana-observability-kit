@@ -1,0 +1,65 @@
+groups:
+  - name: queue
+    rules:
+      - alert: QueueOldestMessageTooOld
+        # Age, not depth, is what customers feel. A deep queue draining fast is fine;
+        # a shallow queue nobody consumes is not.
+        expr: |
+          queue_oldest_message_age_seconds{environment="production"} > 300
+        for: 5m
+        labels:
+          owner: jobs
+          severity: critical
+          page: "true"
+          service: queue
+        annotations:
+          summary: "Queue {{ $labels.queue }}: oldest message waiting {{ $value | humanizeDuration }}"
+          description: >-
+            Messages wait longer than 5 minutes. Check consumer count and worker health;
+            WorkerCrashLooping is the usual cause.
+          runbook_url: https://example.org/runbooks/queue-backlog
+
+      - alert: QueueDepthHigh
+        # WORKED EXAMPLE OF A NOISY RULE - left in on purpose.
+        # for: 1m on a metric that oscillates around the threshold makes this rule
+        # flap. The "Flapping" panel on the Alert Noise dashboard is built to catch
+        # exactly this. The fix is in docs/runbooks/queue-depth-flapping.md.
+        expr: |
+          queue_depth{environment="production"} > 500
+        for: 1m
+        labels:
+          owner: jobs
+          severity: warning
+          page: "false"
+          service: queue
+        annotations:
+          summary: "Queue {{ $labels.queue }} depth above 500"
+          description: Backlog is building. Compare publish and consume rates before acting.
+          runbook_url: https://example.org/runbooks/queue-depth-flapping
+
+      - alert: QueueConsumersLow
+        expr: |
+          queue_consumers{environment="production"} < 3
+        for: 5m
+        labels:
+          owner: jobs
+          severity: warning
+          page: "false"
+          service: queue
+        annotations:
+          summary: "Queue {{ $labels.queue }} has only {{ $value }} consumers"
+          description: Fewer consumers than the deployment should have. A worker is probably restarting.
+          runbook_url: https://example.org/runbooks/queue-backlog
+
+      - alert: QueueDown
+        expr: |
+          app_up{service="queue", environment="production"} == 0
+        for: 2m
+        labels:
+          owner: jobs
+          severity: critical
+          page: "true"
+        annotations:
+          summary: "Queue broker {{ $labels.instance }} is down"
+          description: Producers cannot publish and workers cannot consume. Everything async stops.
+          runbook_url: https://example.org/runbooks/queue-backlog
