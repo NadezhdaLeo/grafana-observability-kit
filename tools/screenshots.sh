@@ -15,6 +15,9 @@ GRAFANA_AUTH="${GRAFANA_AUTH:-admin:admin}"
 OUT="$(cd "$(dirname "$0")/.." && pwd)/docs/screenshots"
 WIDTH="${WIDTH:-1600}"
 HEIGHT="${HEIGHT:-1100}"
+# Set FROM_OVERRIDE (e.g. now-45m) to render a shorter range than the per-dashboard default,
+# useful when the stack has been running for less than a few hours.
+FROM_OVERRIDE="${FROM_OVERRIDE:-}"
 
 # uid:slug:from
 DASHBOARDS=(
@@ -40,6 +43,7 @@ done
 
 for entry in "${DASHBOARDS[@]}"; do
   IFS=: read -r uid slug from <<<"$entry"
+  [ -n "$FROM_OVERRIDE" ] && from="$FROM_OVERRIDE"
   url="$GRAFANA_URL/render/d/$uid/$slug?orgId=1&from=$from&to=now&width=$WIDTH&height=$HEIGHT&kiosk&tz=UTC&theme=dark"
   echo "rendering $uid -> docs/screenshots/$uid.png"
   curl -fsS -u "$GRAFANA_AUTH" "$url" -o "$OUT/$uid.png"

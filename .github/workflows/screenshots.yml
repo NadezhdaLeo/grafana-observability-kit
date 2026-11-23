@@ -1,0 +1,50 @@
+name: Render dashboard screenshots
+
+# Runs the full stack on a GitHub runner with incidents injected 6x more often,
+# lets it collect data, renders every dashboard and commits the PNGs.
+# Manual trigger, plus once when this file changes.
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "How long to let the stack run before rendering"
+        default: "45"
+  push:
+    paths: [".github/workflows/screenshots.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MINUTES: ${{ github.event.inputs.minutes || '45' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the stack with the renderer
+        run: SCENARIO_SPEED=6.0 docker compose --profile screenshots up -d --build
+
+      - name: Let the simulated fleet produce incidents
+        run: |
+          echo "Collecting data for $MINUTES minutes"
+          sleep "$((MINUTES * 60))"
+          docker compose ps
+
+      - name: Render dashboards
+        run: FROM_OVERRIDE="now-${MINUTES}m" ./tools/screenshots.sh
+
+      - name: Commit screenshots
+        run: |
+          git config user.name "Nadezhda Leonova"
+          git config user.email "NadezhdaLeo@users.noreply.github.com"
+          git add docs/screenshots/*.png
+          git diff --cached --quiet && echo "nothing changed" && exit 0
+          git commit -m "Add dashboard screenshots (rendered by CI after ${MINUTES} min of simulated traffic)"
+          git push
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose --profile screenshots down -v
