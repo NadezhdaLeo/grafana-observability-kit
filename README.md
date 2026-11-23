@@ -185,7 +185,7 @@ to the URL and take a window screenshot at 1600 px width.
 
 ## Related
 
-[us-market-widget](https://github.com/YOUR_GITHUB_USER/us-market-widget) — the desktop
+[us-market-widget](https://github.com/NadezhdaLeo/us-market-widget) — the desktop
 indicator this kit's trading-hours row is a simplified version of. The widget derives
 the full NYSE holiday and early-close calendar from the exchange rules; the kit's
 `market_session_open` metric uses weekday hours only.
